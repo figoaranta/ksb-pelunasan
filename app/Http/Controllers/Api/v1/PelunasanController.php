@@ -1,6 +1,7 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api\v1;
+use App\Http\Controllers\Controller;
 use App\Pelunasan;
 use App\Giro;
 use Illuminate\Http\Request;
@@ -25,7 +26,7 @@ class PelunasanController extends Controller
 
 		$seluruhHutang = DB::connection('mysql3')->table('hutangs')->where('penjual',$penjual);
 		
-		$giros = Giro::where('machineId',UniqueMachineID())->get();
+		$giros = Giro::where('machineId',UniqueMachineID2())->get();
 
 		$giroId = '';
 		$namaBank = '';
@@ -106,14 +107,13 @@ class PelunasanController extends Controller
 			}
 		}
 
-		Giro::where('machineId',UniqueMachineID())->delete();
+		Giro::where('machineId',UniqueMachineID2())->delete();
 
 		return $pelunasan;
 	}
 }
 
-
-function UniqueMachineID($salt = "") {
+function UniqueMachineID2($salt = "") {
     if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
         $temp = sys_get_temp_dir().DIRECTORY_SEPARATOR."diskpartscript.txt";
         if(!file_exists($temp) && !is_file($temp)) file_put_contents($temp, "select disk 0\ndetail disk");

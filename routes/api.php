@@ -18,5 +18,7 @@ use Illuminate\Support\Facades\Route;
 //     return $request->user();
 // });
 
-Route::apiResource('giros','GiroController');
-Route::apiResource('pelunasan','PelunasanController');
+Route::prefix('v1')->group(function(){
+	Route::apiResource('giros','Api\v1\GiroController');
+	Route::apiResource('pelunasan','Api\v1\PelunasanController');
+});
