@@ -14,6 +14,6 @@ class Pelunasan extends Model
     	'jumlah',
     	'tanggal',
     	'detail',
-    	'deterimaOleh',
+    	'diterimaOleh',
     ];
 }
