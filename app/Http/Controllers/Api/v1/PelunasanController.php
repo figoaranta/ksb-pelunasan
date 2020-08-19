@@ -22,7 +22,12 @@ class PelunasanController extends Controller
 		$totalHutang = 0;
 		$totalGiro = 0;
 		$newArray = [];
-		$penjual = DB::connection('mysql2')->table('suppliers')->where('nomorBon',$request->keterangan)->first()->penjual;
+		$bonArray =(explode(",",$request->keterangan));
+		if(count($bonArray)>1){
+			$penjual = DB::connection('mysql2')->table('suppliers')->where('nomorBon',$bonArray[0])->first()->penjual;
+		}else{
+			$penjual = DB::connection('mysql2')->table('suppliers')->where('nomorBon',$request->keterangan)->first()->penjual;
+		}
 
 		$seluruhHutang = DB::connection('mysql3')->table('hutangs')->where('penjual',$penjual);
 		
@@ -75,7 +80,6 @@ class PelunasanController extends Controller
 			return response()->json(["Jumlah dan total jumlah giro berbeda."]);
 		}
 		
-		$bonArray =(explode(",",$request->keterangan));
 
 		foreach ($bonArray as $bonId) {
 			$hutang = DB::connection('mysql2')->table('suppliers')->where('nomorBon',$bonId)->first()->hargaTotal;
