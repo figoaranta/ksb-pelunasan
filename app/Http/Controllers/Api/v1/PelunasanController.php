@@ -19,17 +19,67 @@ class PelunasanController extends Controller
 	}
 	public function store(Request $request)
 	{	
+		$newPelunasanId = 0;
+		$lastPelunasanId = "";
 		$totalHutang = 0;
 		$totalGiro = 0;
 		$newArray = [];
 		$bonArray =(explode(",",$request->keterangan));
+
+		$date = (getdate());
+        if(Pelunasan::all()->count() != 0){
+            $number = '';
+            $lastPelunasanId = Pelunasan::all()->last()->pelunasanId;
+            if(strlen($date['mon'])==1){
+                $date['mon'] = "0".$date['mon'];
+            }
+            if(strlen($date['mday'])==1){
+                $date['mday'] = "0".$date['mday'];
+            }
+            if($lastPelunasanId[11].$lastPelunasanId[12] != $date['mday']){
+                $pelunasanId = 1;
+            }
+            else{
+                for ($i=strlen($lastPelunasanId)-1; $i > 0 ; $i--) { 
+                    if($lastPelunasanId[$i] == " "){
+                        break;
+                    }
+                $number = $number.$lastPelunasanId[$i];
+                }
+                $newPelunasanId = strrev($number)+1;
+            }
+            
+			if($request->jenisVoucher == "Pelunasan Customer"){
+	            $pelunasanId = 'VC-'.$date['year'].'-'.$date['mon'].'-'.$date['mday'].' '.$newPelunasanId;
+			}else{
+	            $pelunasanId = 'VS-'.$date['year'].'-'.$date['mon'].'-'.$date['mday'].' '.$newPelunasanId;
+			}
+        }
+        else{
+            if (strlen($date['mon'])==1){
+                $date['mon'] = 0 . $date['mon'];
+            }
+            if (strlen($date['mday'])==1){
+                $date['mday'] = 0 . $date['mday'];
+            }
+            if($request->jenisVoucher == "Pelunasan Customer"){
+            	$pelunasanId = 'VC-'.$date['year'].'-'.$date['mon'].'-'.$date['mday'].' '.'1';
+            } else{
+            	$pelunasanId = 'VS-'.$date['year'].'-'.$date['mon'].'-'.$date['mday'].' '.'1';
+            }
+            
+        }
+
 		if(count($bonArray)>1){
 			$penjual = DB::connection('mysql2')->table('suppliers')->where('nomorBon',$bonArray[0])->first()->penjual;
 		}else{
 			$penjual = DB::connection('mysql2')->table('suppliers')->where('nomorBon',$request->keterangan)->first()->penjual;
 		}
-
-		$seluruhHutang = DB::connection('mysql3')->table('hutangs')->where('penjual',$penjual);
+		if ($request->jenisVoucher == "Pelunasan Customer"){
+			$seluruhHutang = DB::connection('mysql3')->table('piutangs')->where('penjual',$penjual);
+		}else{
+			$seluruhHutang = DB::connection('mysql3')->table('hutangs')->where('penjual',$penjual);
+		}
 		
 		$giros = Giro::where('machineId',UniqueMachineID2())->get();
 
@@ -67,7 +117,6 @@ class PelunasanController extends Controller
 		$encode = json_encode($object);
 
 		$request->validate([
-			'pelunasanId'=>'required',
 			'keterangan'=>'required',
 			'bayarKepada'=>'required',
 			'jumlah'=>'required',
@@ -88,8 +137,9 @@ class PelunasanController extends Controller
 		if($request->jumlah < $totalHutang){
 			return response()->json(["Total hutang is greater than jumlah yang mau dibayar."]);
 		}
+		
 		$pelunasan = Pelunasan::create([
-			'pelunasanId'=>$request->pelunasanId,
+			'pelunasanId'=>$pelunasanId,
 			'keterangan'=>$request->keterangan,
 			'bayarKepada'=>$request->bayarKepada,
 			'jumlah'=>$request->jumlah,
@@ -98,10 +148,18 @@ class PelunasanController extends Controller
 			'diterimaOleh'=>$request->diterimaOleh,
 		]);
 
-		foreach ($bonArray as $bonId) {
-			$hutang = DB::connection('mysql2')->table('suppliers')->where('nomorBon',$bonId);
-			$hutang->update(['lunas'=>true]);
+		if ($request->jenisVoucher == "Pelunasan Supplier"){
+			foreach ($bonArray as $bonId) {
+				$hutang = DB::connection('mysql2')->table('suppliers')->where('nomorBon',$bonId);
+				$hutang->update(['lunas'=>true]);
+			}
+		}else{
+			foreach ($bonArray as $bonId) {
+				$hutang = DB::connection('mysql2')->table('clients')->where('nomorBon',$bonId);
+				$hutang->update(['lunas'=>true]);
+			}
 		}
+		
 
 		if (isset($seluruhHutang->get()[0])) {
 			if($seluruhHutang->first()->total != 0){
